@@ -7,4 +7,5 @@ brew tap ankitpokhrel/jira-cli
 brew install jira-cli
 ```
 [Create API token](https://id.atlassian.com/manage-profile/security/api-tokens)
+
 Place the token under .zshrc: `export JIRA_API_TOKEN="xxx"`
