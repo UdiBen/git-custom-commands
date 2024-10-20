@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# Check for correct number of arguments
+if [ "$#" -ne 1 ]; then
+  echo "Usage: $0 <new-branch-name>"
+  exit 1
+fi
+
+TICKET_ID=$1
+
+# Navigate to the project directory
+cd /Users/udibenamitai/code/application
+
+# Fetch the latest changes from the remote repository
+git fetch --all
+
+# Checkout the develop branch
+git checkout develop
+
+# Pull the latest changes on the develop branch
+git pull origin develop
+
+TICKET_TITLE=$(jira issue view "$TICKET_ID" | grep "#" | awk '{$1=$1};1' | sed 's/^# //')
+
+if [ -z "$TICKET_TITLE" ]; then
+  echo "Failed to fetch title for ticket $TICKET_ID"
+  exit 1
+fi
+
+TICKET_TITLE_FORMATTED=$(echo "$TICKET_TITLE" | tr '[:upper:]' '[:lower:]' | tr -cd '[:alnum:] ' | tr ' ' '-' | tr -s '-')
+BRANCH_NAME="$TICKET_ID-$TICKET_TITLE_FORMATTED"
+
+# Create and checkout the new branch
+git checkout -b $BRANCH_NAME
+
+echo "Branch '$BRANCH_NAME' created from 'develop' and checked out."

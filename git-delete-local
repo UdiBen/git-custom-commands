@@ -1,0 +1,4 @@
+#!/bin/sh
+
+# This script deletes all local branches without remote
+git branch --no-contains develop --merged develop| xargs git branch -d

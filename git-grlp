@@ -1,0 +1,6 @@
+#!/bin/sh
+
+# This script merges the updated develop to the current branch
+git fetch
+git merge origin/develop
+git push

@@ -1,0 +1,21 @@
+#!/bin/sh
+
+# This script stashes all changes and unstashes them in a new branch
+if [ ! -z "$1" ]
+then
+  git stash
+
+  git newbranch $1
+
+  # Apply stashed changes
+  git stash pop
+
+  # Check if stash pop had conflicts
+  if [ $? -ne 0 ]; then
+    echo "Warning: Conflicts occurred when applying stash. Please resolve them."
+  fi
+else
+  echo "Error: Missing ticket id to unstash to"
+  echo "Usage: git unstash <ticket-id>"
+  exit 1
+fi
