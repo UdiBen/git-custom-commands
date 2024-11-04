@@ -14,6 +14,15 @@ cd /Users/udibenamitai/code/application
 # Fetch the latest changes from the remote repository
 git fetch --all
 
+# Check for uncommitted changes and stash them if they exist
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "Stashing uncommitted changes..."
+  git stash
+  STASHED=true
+else
+  STASHED=false
+fi
+
 # Checkout the develop branch
 git checkout develop
 
@@ -32,5 +41,11 @@ BRANCH_NAME="$TICKET_ID-$TICKET_TITLE_FORMATTED"
 
 # Create and checkout the new branch
 git checkout -b $BRANCH_NAME
+
+# Pop the stash if it was stashed
+if [ "$STASHED" = true ]; then
+  echo "Applying stashed changes..."
+  git stash pop
+fi
 
 echo "Branch '$BRANCH_NAME' created from 'develop' and checked out."
