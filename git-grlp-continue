@@ -1,0 +1,7 @@
+#!/bin/sh
+
+git add .
+
+git merge --continue
+
+git push
