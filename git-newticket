@@ -1,0 +1,46 @@
+#!/bin/sh
+
+# Set your Jira base URL (update with your actual URL)
+JIRA_BASE_URL="https://yourcompany.atlassian.net"
+
+# Prompt for ticket Title and Description
+echo "Enter ticket Title:"
+read TICKET_TITLE
+
+echo "Enter ticket Description:"
+read TICKET_DESCRIPTION
+
+# Use a selectable list for ticket type
+PS3="Please select a ticket type: "
+options=("Bug" "Story" "Task")
+select opt in "${options[@]}"; do
+  if [ -n "$opt" ]; then
+    TICKET_TYPE="$opt"
+    break
+  else
+    echo "Invalid selection. Try again."
+  fi
+done
+
+#https://capitola-ins.atlassian.net/issues/CAP-5550?jql=textfields%20~%20%22test%2A%22
+# Create a Jira ticket using the provided details
+echo "Creating Jira ticket..."
+TICKET_OUTPUT=$(jira issue create --summary "$TICKET_TITLE" --body "$TICKET_DESCRIPTION" --type "$TICKET_TYPE" --no-input)
+
+# Extract the ticket ID (assumes a format like ABC-123)
+TICKET_ID=$(echo "$TICKET_OUTPUT" | grep -oE '[A-Z]+-[0-9]+')
+
+if [ -z "$TICKET_ID" ]; then
+  echo "Failed to create a Jira ticket. Output:"
+  echo "$TICKET_OUTPUT"
+  exit 1
+fi
+
+echo "Created Jira ticket: $TICKET_ID"
+
+# Construct and print the URL for the newly created ticket
+TICKET_URL="https://capitola-ins.atlassian.net/issues/${TICKET_ID}"
+echo "Ticket URL: $TICKET_URL"
+
+# Call the existing git-newbranch script with the new ticket ID
+git newbranch "$TICKET_ID"

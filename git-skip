@@ -1,0 +1,32 @@
+#!/bin/bash
+
+show_help() {
+  echo "Usage:"
+  echo "  git skip <file>         # Mark a file as skip-worktree (ignore local changes)"
+  echo "  git skip -u <file>      # Unmark a file (stop ignoring changes)"
+  echo "  git skip -l             # List all skip-worktree files"
+  echo "  git skip help           # Show this help message"
+}
+
+if [[ $# -eq 0 || "$1" == "help" ]]; then
+  show_help
+  exit 0
+fi
+
+case "$1" in
+  -l)
+    git ls-files -v | grep '^S' | sed 's/^S //'
+    ;;
+  -u)
+    if [[ -z "$2" ]]; then
+      echo "Error: Please provide a file to unskip."
+      exit 1
+    fi
+    git update-index --no-skip-worktree "$2"
+    echo "Unskipped $2"
+    ;;
+  *)
+    git update-index --skip-worktree "$1"
+    echo "Skipped $1"
+    ;;
+esac
