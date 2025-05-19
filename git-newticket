@@ -1,8 +1,5 @@
 #!/bin/sh
 
-# Set your Jira base URL (update with your actual URL)
-JIRA_BASE_URL="https://yourcompany.atlassian.net"
-
 # Prompt for ticket Title and Description
 echo "Enter ticket Title:"
 read TICKET_TITLE
