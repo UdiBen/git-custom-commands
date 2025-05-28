@@ -35,6 +35,13 @@ fi
 
 echo "Created Jira ticket: $TICKET_ID"
 
+# Assign the ticket to the current user
+ASSIGN_OUTPUT=$(jira issue assign "$TICKET_ID" "$(jira me)" 2>&1)
+if [ $? -ne 0 ]; then
+  echo "Warning: Failed to assign ticket to yourself."
+  echo "$ASSIGN_OUTPUT"
+fi
+
 # Construct and print the URL for the newly created ticket
 TICKET_URL="https://capitola-ins.atlassian.net/issues/${TICKET_ID}"
 echo "Ticket URL: $TICKET_URL"

@@ -4,12 +4,27 @@
 
 message=$1 # First parameter will be the commit message
 
+# Get current branch name
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+# Extract ticket ID (e.g., CAP-5970)
+ticket_id=$(echo "$branch" | grep -oE '^[A-Z]+-[0-9]+')
+
+# Fetch Jira ticket title
+ticket_title=$(jira issue view "$ticket_id" --plain | grep '^[[:space:]]*#' | sed 's/^[[:space:]]*# *//')
+
+# Combine for PR title
+pr_title="$ticket_id $ticket_title"
+
+# Construct Jira URL
+jira_url="https://capitola-ins.atlassian.net/issues/$ticket_id"
+
 if [ ! -z "$1" ] # checking if the commit message is present. If not then aborting.
 then
   git add .
   git commit -am "$message"
   git push
-  gh pr create -w
+  gh pr create -w --title "$pr_title" --body "$jira_url"
 else
   echo "Commit message is not provided"
 fi
