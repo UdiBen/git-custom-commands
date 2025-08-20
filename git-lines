@@ -1,0 +1,105 @@
+#!/bin/bash
+
+# This script shows lines of code statistics by contributor
+
+show_help() {
+  echo "Usage:"
+  echo "  git lines                  # Show lines added/removed by each contributor"
+  echo "  git lines --since <date>   # Filter by date (e.g., --since=2024-01-01)"
+  echo "  git lines --author <name>  # Show stats for specific author"
+  echo "  git lines help             # Show this help message"
+}
+
+if [[ $# -eq 0 || "$1" == "help" ]]; then
+  if [[ "$1" != "help" ]]; then
+    echo "=== Lines of Code by Contributor ==="
+    echo ""
+  fi
+fi
+
+if [[ "$1" == "help" ]]; then
+  show_help
+  exit 0
+fi
+
+SINCE_FLAG=""
+AUTHOR_FLAG=""
+
+# Parse arguments
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --since)
+      SINCE_FLAG="--since=$2"
+      shift 2
+      ;;
+    --since=*)
+      SINCE_FLAG="$1"
+      shift
+      ;;
+    --author)
+      AUTHOR_FLAG="--author=$2"
+      shift 2
+      ;;
+    --author=*)
+      AUTHOR_FLAG="$1"
+      shift
+      ;;
+    *)
+      shift
+      ;;
+  esac
+done
+
+if [[ -n "$SINCE_FLAG" ]]; then
+  echo "Period: ${SINCE_FLAG#--since=} to present"
+fi
+if [[ -n "$AUTHOR_FLAG" ]]; then
+  echo "Author filter: ${AUTHOR_FLAG#--author=}"
+fi
+echo ""
+
+# Get list of authors (filtered if needed)
+if [[ -n "$AUTHOR_FLAG" ]]; then
+  authors=$(git log --format='%aN <%aE>' $SINCE_FLAG $AUTHOR_FLAG | sort -u)
+else
+  authors=$(git log --format='%aN <%aE>' $SINCE_FLAG | sort -u)
+fi
+
+# Calculate stats for each author and store in temp file
+temp_file=$(mktemp)
+echo "$authors" | while read name; do
+  if [[ -n "$name" ]]; then
+    stats=$(git log --author="$name" $SINCE_FLAG --pretty=tformat: --numstat | awk '{ 
+      add += $1; 
+      subs += $2; 
+      loc += $1 - $2 
+    } END { 
+      printf "%d\t%d\t%d", add+0, subs+0, loc+0 
+    }' -)
+    echo -e "$name\t$stats" >> "$temp_file"
+  fi
+done
+
+# Sort by lines added (2nd column) and format as table
+printf "%-40s %10s %10s %10s\n" "CONTRIBUTOR" "ADDED" "REMOVED" "NET"
+printf "%-40s %10s %10s %10s\n" "$(printf '%0.s-' {1..40})" "$(printf '%0.s-' {1..10})" "$(printf '%0.s-' {1..10})" "$(printf '%0.s-' {1..10})"
+
+sort -t$'\t' -k2 -nr "$temp_file" | while IFS=$'\t' read -r name added removed net; do
+  # Truncate long names to fit the column
+  short_name=$(echo "$name" | cut -c1-39)
+  printf "%-40s %10s %10s %10s\n" "$short_name" "$added" "$removed" "$net"
+done
+
+rm -f "$temp_file"
+
+echo ""
+echo "=== Summary ==="
+total_added=$(git log $SINCE_FLAG $AUTHOR_FLAG --pretty=tformat: --numstat | awk '{ add += $1 } END { print add+0 }')
+total_removed=$(git log $SINCE_FLAG $AUTHOR_FLAG --pretty=tformat: --numstat | awk '{ subs += $2 } END { print subs+0 }')
+total_net=$((total_added - total_removed))
+total_commits=$(git log $SINCE_FLAG $AUTHOR_FLAG --oneline | wc -l)
+
+echo "Total commits: $total_commits"
+echo "Total lines added: $total_added"
+echo "Total lines removed: $total_removed"
+echo "Net lines: $total_net"
