@@ -1,8 +1,14 @@
 #!/bin/sh
 
-# Prompt for ticket Title and Description
-echo "Enter ticket Title:"
-read TICKET_TITLE
+# Check if title was provided as argument
+if [ -n "$1" ]; then
+  TICKET_TITLE="$1"
+  echo "Using provided title: $TICKET_TITLE"
+else
+  # Prompt for ticket Title
+  echo "Enter ticket Title:"
+  read TICKET_TITLE
+fi
 
 echo "Enter ticket Description:"
 read TICKET_DESCRIPTION
