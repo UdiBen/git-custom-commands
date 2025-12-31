@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Use BASE_BRANCH environment variable, default to main
+BASE_BRANCH=${BASE_BRANCH:-main}
+
 # Check for correct number of arguments
 if [ "$#" -ne 1 ]; then
   echo "Usage: $0 <new-branch-name>"
@@ -23,11 +26,11 @@ else
   STASHED=false
 fi
 
-# Checkout the develop branch
-git checkout develop
+# Checkout the base branch
+git checkout $BASE_BRANCH
 
-# Pull the latest changes on the develop branch
-git pull origin develop
+# Pull the latest changes on the base branch
+git pull origin $BASE_BRANCH
 
 TICKET_TITLE=$(jira issue view "$TICKET_ID" | grep "#" | awk '{$1=$1};1' | sed 's/^# //')
 
@@ -48,4 +51,4 @@ if [ "$STASHED" = true ]; then
   git stash pop
 fi
 
-echo "Branch '$BRANCH_NAME' created from 'develop' and checked out."
+echo "Branch '$BRANCH_NAME' created from '$BASE_BRANCH' and checked out."

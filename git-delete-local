@@ -1,4 +1,7 @@
 #!/bin/sh
 
+# Use BASE_BRANCH environment variable, default to main
+BASE_BRANCH=${BASE_BRANCH:-main}
+
 # This script deletes all local branches without remote
-git branch --no-contains develop --merged develop| xargs git branch -d
+git branch --no-contains $BASE_BRANCH --merged $BASE_BRANCH| xargs git branch -d
