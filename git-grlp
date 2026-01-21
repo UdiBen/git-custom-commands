@@ -1,19 +1,46 @@
 #!/bin/sh
 
-# Use BASE_BRANCH environment variable, default to main
-BASE_BRANCH=${BASE_BRANCH:-main}
-
 # Fetch the latest changes from origin
 git fetch
 
-# Attempt to merge origin/$BASE_BRANCH into the current branch
-git merge origin/$BASE_BRANCH
-merge_exit_code=$?
-
-if [ $merge_exit_code -ne 0 ]; then
-    # A non-zero exit code likely means merge conflicts occurred
-    echo "Please resolve the conflicts, commit, and push when ready."
+# Auto-detect base branch: check for main first, then master
+# Can be overridden with BASE_BRANCH environment variable
+if [ -n "$BASE_BRANCH" ]; then
+    : # Use the provided BASE_BRANCH
+elif git show-ref --verify --quiet refs/remotes/origin/main; then
+    BASE_BRANCH=main
+elif git show-ref --verify --quiet refs/remotes/origin/master; then
+    BASE_BRANCH=master
 else
-    # No conflicts, safe to push
-    git push
+    echo "Error: Could not detect base branch (no origin/main or origin/master found)"
+    exit 1
+fi
+
+echo "Using base branch: $BASE_BRANCH"
+
+# Ask user if the branch is private/local
+printf "Is this a private/local branch (only you work on it)? [y/N]: "
+read answer
+
+if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
+    # Private branch: use rebase + force push
+    git rebase origin/$BASE_BRANCH
+    rebase_exit_code=$?
+
+    if [ $rebase_exit_code -ne 0 ]; then
+        echo "Please resolve the conflicts, then run: git rebase --continue"
+        echo "When done, push with: git push --force-with-lease"
+    else
+        git push --force-with-lease
+    fi
+else
+    # Shared branch: use merge + push
+    git merge origin/$BASE_BRANCH
+    merge_exit_code=$?
+
+    if [ $merge_exit_code -ne 0 ]; then
+        echo "Please resolve the conflicts, commit, and push when ready."
+    else
+        git push
+    fi
 fi
