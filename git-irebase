@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+# Interactive rebase onto base branch, then force-push
+set -euo pipefail
+
+# Auto-detect base branch: check for main first, then master
+# Can be overridden with BASE_BRANCH environment variable
+if [ -n "${BASE_BRANCH:-}" ]; then
+  : # Use the provided BASE_BRANCH
+elif git show-ref --verify --quiet refs/remotes/origin/main; then
+  BASE_BRANCH=main
+elif git show-ref --verify --quiet refs/remotes/origin/master; then
+  BASE_BRANCH=master
+else
+  echo "error: could not detect base branch (no origin/main or origin/master found)" >&2
+  exit 1
+fi
+
+current=$(git branch --show-current)
+if [[ "$current" == "$BASE_BRANCH" ]]; then
+  echo "error: already on $BASE_BRANCH, nothing to rebase" >&2
+  exit 1
+fi
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "warning: working tree is dirty" >&2
+  printf "Continue anyway? [y/N]: " >&2
+  read -r answer
+  if [[ "$answer" != "y" && "$answer" != "Y" ]]; then
+    exit 1
+  fi
+fi
+
+head_before=$(git rev-parse HEAD)
+
+echo "Rebasing '$current' onto '$BASE_BRANCH'..."
+git rebase -i "$BASE_BRANCH"
+
+if [[ "$(git rev-parse HEAD)" == "$head_before" ]]; then
+  echo "No changes after rebase, skipping push."
+  exit 0
+fi
+
+echo "Pushing with --force-with-lease..."
+git push --force-with-lease
