@@ -1,6 +1,25 @@
 #!/bin/sh
 
+# Delete local branches that have been merged into the base branch
+
 BASE_BRANCH=$(git base-branch) || exit 1
 
-# This script deletes all local branches without remote
-git branch --no-contains $BASE_BRANCH --merged $BASE_BRANCH| xargs git branch -d
+git fetch --all --prune
+
+branches=$(git branch --no-contains "$BASE_BRANCH" --merged "$BASE_BRANCH" | tr -d ' ')
+
+if [ -z "$branches" ]; then
+  echo "No merged branches to delete."
+  exit 0
+fi
+
+echo "Branches to delete:"
+echo "$branches"
+printf "\nProceed? [y/N]: "
+read answer
+
+if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
+  echo "$branches" | xargs git branch -d
+else
+  echo "Aborted."
+fi

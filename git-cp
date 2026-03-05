@@ -1,14 +1,24 @@
 #!/bin/sh
 
-# This script adds all untracked files, commits and immediately pushes to origin
+# Add all files, commit, and push to origin
 
-message=$1 # First parameter will be the commit message
+message=$1
 
-if [ ! -z "$1" ] # checking if the commit message is present. If not then aborting.
-then
-  git add .
-  git commit -am "$message"
-  git push
-else
+if [ -z "$message" ]; then
   echo "Commit message is not provided"
+  exit 1
 fi
+
+echo "Files to be committed:"
+git status --short
+printf "\nProceed? [y/N]: "
+read answer
+
+if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+  echo "Aborted."
+  exit 1
+fi
+
+git add .
+git commit -am "$message"
+git push

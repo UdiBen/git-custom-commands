@@ -1,17 +1,13 @@
 #!/bin/sh
 
-# This script adds all untracked files, commits, pushes, and creates a PR
+# Add all files, commit, push, and create a PR
 
-message=$1 # First parameter will be the commit message
+message=$1
 
-if [ -z "$1" ]; then
+if [ -z "$message" ]; then
   echo "Commit message is not provided"
   exit 1
 fi
 
-pr_title="$message"
-
-git add .
-git commit -am "$message"
-git push
-gh pr create -w --title "$pr_title" --body ""
+git cp "$message" || exit 1
+gh pr create -w --title "$message" --body ""
