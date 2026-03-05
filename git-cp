@@ -11,10 +11,10 @@ fi
 
 echo "Files to be committed:"
 git status --short
-printf "\nProceed? [y/N]: "
+printf "\nProceed? [Y/n]: "
 read answer
 
-if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+if [ "$answer" = "n" ] || [ "$answer" = "N" ]; then
   echo "Aborted."
   exit 1
 fi
