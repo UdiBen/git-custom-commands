@@ -3,18 +3,7 @@
 # Fetch the latest changes from origin
 git fetch
 
-# Auto-detect base branch: check for main first, then master
-# Can be overridden with BASE_BRANCH environment variable
-if [ -n "$BASE_BRANCH" ]; then
-    : # Use the provided BASE_BRANCH
-elif git show-ref --verify --quiet refs/remotes/origin/main; then
-    BASE_BRANCH=main
-elif git show-ref --verify --quiet refs/remotes/origin/master; then
-    BASE_BRANCH=master
-else
-    echo "Error: Could not detect base branch (no origin/main or origin/master found)"
-    exit 1
-fi
+BASE_BRANCH=$(git base-branch) || exit 1
 
 echo "Using base branch: $BASE_BRANCH"
 

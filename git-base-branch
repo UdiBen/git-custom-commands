@@ -1,0 +1,35 @@
+#!/bin/sh
+
+# Detect the base branch of the current repository.
+# Prints the branch name to stdout.
+#
+# Detection order:
+# 1. BASE_BRANCH environment variable (explicit override)
+# 2. origin/HEAD symbolic ref (set on clone, reflects remote default)
+# 3. Fallback: check for origin/main, then origin/master
+#
+# Usage from other scripts:
+#   BASE_BRANCH=$(git base-branch)
+
+if [ -n "${BASE_BRANCH:-}" ]; then
+  echo "$BASE_BRANCH"
+  exit 0
+fi
+
+# Try the idiomatic git way: origin/HEAD
+head_ref=$(git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null | sed 's|refs/remotes/origin/||')
+if [ -n "$head_ref" ]; then
+  echo "$head_ref"
+  exit 0
+fi
+
+# Fallback: check for common default branch names
+if git show-ref --verify --quiet refs/remotes/origin/main; then
+  echo "main"
+elif git show-ref --verify --quiet refs/remotes/origin/master; then
+  echo "master"
+else
+  echo "error: could not detect base branch" >&2
+  echo "hint: run 'git remote set-head origin --auto' or set BASE_BRANCH env var" >&2
+  exit 1
+fi

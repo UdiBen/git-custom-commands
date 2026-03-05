@@ -2,18 +2,7 @@
 # Interactive rebase onto base branch, then force-push
 set -euo pipefail
 
-# Auto-detect base branch: check for main first, then master
-# Can be overridden with BASE_BRANCH environment variable
-if [ -n "${BASE_BRANCH:-}" ]; then
-  : # Use the provided BASE_BRANCH
-elif git show-ref --verify --quiet refs/remotes/origin/main; then
-  BASE_BRANCH=main
-elif git show-ref --verify --quiet refs/remotes/origin/master; then
-  BASE_BRANCH=master
-else
-  echo "error: could not detect base branch (no origin/main or origin/master found)" >&2
-  exit 1
-fi
+BASE_BRANCH=$(git base-branch) || exit 1
 
 current=$(git branch --show-current)
 if [[ "$current" == "$BASE_BRANCH" ]]; then

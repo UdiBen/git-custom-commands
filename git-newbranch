@@ -1,9 +1,15 @@
 #!/bin/sh
 
-# Use BASE_BRANCH environment variable, default to main
-BASE_BRANCH=${BASE_BRANCH:-main}
+# Create a new branch from the latest base branch
 
 BRANCH_NAME=$1
+
+if [ -z "$BRANCH_NAME" ]; then
+  echo "Usage: git newbranch <branch-name>" >&2
+  exit 1
+fi
+
+BASE_BRANCH=$(git base-branch) || exit 1
 
 # Fetch the latest changes from the remote repository
 git fetch --all
@@ -17,14 +23,12 @@ else
   STASHED=false
 fi
 
-# Checkout the base branch
-git checkout $BASE_BRANCH
-
-# Pull the latest changes on the base branch
-git pull origin $BASE_BRANCH
+# Checkout the base branch and pull
+git checkout "$BASE_BRANCH"
+git pull origin "$BASE_BRANCH"
 
 # Create and checkout the new branch
-git checkout -b $BRANCH_NAME
+git checkout -b "$BRANCH_NAME"
 
 # Pop the stash if it was stashed
 if [ "$STASHED" = true ]; then
