@@ -2,10 +2,49 @@
 
 # Create a new branch from the latest base branch
 
-BRANCH_NAME=$1
+usage() {
+  cat >&2 <<EOF
+Usage:
+  git newbranch <branch-name>        # use name directly
+  git newbranch <issue-number>       # 3-5 digit number, fetches title from GitHub
+  git newbranch <issue-url>          # GitHub issue URL, fetches title from GitHub
+EOF
+  exit 1
+}
+
+# Convert a GitHub issue title to a branch name:
+# lowercase, replace spaces with dashes, keep only alphanumeric and dashes, collapse multiple dashes
+title_to_branch() {
+  echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g' | sed 's/[^a-z0-9-]//g' | sed 's/-\{2,\}/-/g' | sed 's/^-//;s/-$//'
+}
+
+INPUT="$1"
+BRANCH_NAME=""
+
+if [ -z "$INPUT" ] || [ "$INPUT" = "-h" ] || [ "$INPUT" = "--help" ]; then
+  usage
+elif echo "$INPUT" | grep -qE '^https://github\.com/.+/issues/[0-9]+'; then
+  # GitHub issue URL
+  REPO=$(echo "$INPUT" | sed -n 's|https://github.com/\([^/]*/[^/]*\)/issues/.*|\1|p')
+  ISSUE_NUMBER=$(echo "$INPUT" | sed -n 's|.*/issues/\([0-9]*\).*|\1|p')
+  [ -z "$REPO" ] || [ -z "$ISSUE_NUMBER" ] && { echo "Invalid GitHub issue URL: $INPUT" >&2; exit 1; }
+  TITLE=$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json title -q .title) || { echo "Failed to fetch issue from $INPUT" >&2; exit 1; }
+  BRANCH_NAME=$(title_to_branch "$TITLE")
+  echo "Issue #$ISSUE_NUMBER: $TITLE"
+elif echo "$INPUT" | grep -qE '^[0-9]{3,5}$'; then
+  # Issue number (3-5 digits)
+  ISSUE_NUMBER="$INPUT"
+  REPO=$(gh repo view --json nameWithOwner -q .nameWithOwner) || { echo "Failed to detect GitHub repo" >&2; exit 1; }
+  TITLE=$(gh issue view "$ISSUE_NUMBER" --repo "$REPO" --json title -q .title) || { echo "Failed to fetch issue #$ISSUE_NUMBER" >&2; exit 1; }
+  BRANCH_NAME=$(title_to_branch "$TITLE")
+  echo "Issue #$ISSUE_NUMBER: $TITLE"
+else
+  # Plain branch name
+  BRANCH_NAME="$INPUT"
+fi
 
 if [ -z "$BRANCH_NAME" ]; then
-  echo "Usage: git newbranch <branch-name>" >&2
+  echo "Could not determine branch name" >&2
   exit 1
 fi
 
