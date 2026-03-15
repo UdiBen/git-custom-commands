@@ -11,6 +11,8 @@ echo "Using base branch: $BASE_BRANCH"
 printf "Is this a private/local branch (only you work on it)? [y/N]: "
 read answer
 
+HEAD_BEFORE=$(git rev-parse HEAD)
+
 if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
     # Private branch: use rebase + force push
     git rebase origin/$BASE_BRANCH
@@ -19,6 +21,8 @@ if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
     if [ $rebase_exit_code -ne 0 ]; then
         echo "Please resolve the conflicts, then run: git rebase --continue"
         echo "When done, push with: git push --force-with-lease"
+    elif [ "$(git rev-parse HEAD)" = "$HEAD_BEFORE" ]; then
+        echo "Already up to date with $BASE_BRANCH, nothing to push."
     else
         git push --force-with-lease
     fi
@@ -29,6 +33,8 @@ else
 
     if [ $merge_exit_code -ne 0 ]; then
         echo "Please resolve the conflicts, commit, and push when ready."
+    elif [ "$(git rev-parse HEAD)" = "$HEAD_BEFORE" ]; then
+        echo "Already up to date with $BASE_BRANCH, nothing to push."
     else
         git push
     fi
