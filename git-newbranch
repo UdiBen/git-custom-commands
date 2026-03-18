@@ -18,7 +18,7 @@ title_to_branch() {
   echo "$1" | tr '[:upper:]' '[:lower:]' | sed 's/ /-/g' | sed 's/[^a-z0-9-]//g' | sed 's/-\{2,\}/-/g' | sed 's/^-//;s/-$//'
 }
 
-INPUT="$1"
+INPUT="$*"
 BRANCH_NAME=""
 
 if [ -z "$INPUT" ] || [ "$INPUT" = "-h" ] || [ "$INPUT" = "--help" ]; then
@@ -39,8 +39,8 @@ elif echo "$INPUT" | grep -qE '^[0-9]{3,5}$'; then
   BRANCH_NAME=$(title_to_branch "$TITLE")
   echo "Issue #$ISSUE_NUMBER: $TITLE"
 else
-  # Plain branch name
-  BRANCH_NAME="$INPUT"
+  # Plain branch name - sanitize to kebab-case
+  BRANCH_NAME=$(title_to_branch "$INPUT")
 fi
 
 if [ -z "$BRANCH_NAME" ]; then
@@ -66,13 +66,26 @@ fi
 git checkout "$BASE_BRANCH"
 git pull origin "$BASE_BRANCH"
 
-# Create and checkout the new branch
-git checkout -b "$BRANCH_NAME"
+# Create new branch or checkout existing one
+if git show-ref --verify --quiet "refs/heads/$BRANCH_NAME"; then
+  echo "Branch '$BRANCH_NAME' already exists, checking out and updating from '$BASE_BRANCH'..."
+  git checkout "$BRANCH_NAME"
 
-# Pop the stash if it was stashed
-if [ "$STASHED" = true ]; then
-  echo "Applying stashed changes..."
-  git stash pop
+  # Pop the stash if it was stashed
+  if [ "$STASHED" = true ]; then
+    echo "Applying stashed changes..."
+    git stash pop
+  fi
+
+  git grlp
+else
+  git checkout -b "$BRANCH_NAME"
+
+  # Pop the stash if it was stashed
+  if [ "$STASHED" = true ]; then
+    echo "Applying stashed changes..."
+    git stash pop
+  fi
+
+  echo "Branch '$BRANCH_NAME' created from '$BASE_BRANCH' and checked out."
 fi
-
-echo "Branch '$BRANCH_NAME' created from '$BASE_BRANCH' and checked out."

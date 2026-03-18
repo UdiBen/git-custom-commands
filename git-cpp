@@ -10,4 +10,12 @@ if [ -z "$message" ]; then
 fi
 
 git cp "$message" || exit 1
-gh pr create -w --title "$message" --body ""
+
+printf "\033[1;33mMinor PR? [Y/n]:\033[0m "
+read answer
+LABELS=""
+if [ "$answer" != "n" ] && [ "$answer" != "N" ]; then
+  LABELS="--label exclude-changelog --label minor-change"
+fi
+
+gh pr create -w --title "$message" --body "" $LABELS
