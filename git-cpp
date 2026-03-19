@@ -16,6 +16,14 @@ read answer
 LABELS=""
 if [ "$answer" != "n" ] && [ "$answer" != "N" ]; then
   LABELS="--label exclude-changelog --label minor-change"
+
+  printf "\033[1;33mMostly done by AI? [Y/n]:\033[0m "
+  read ai_answer
+  if [ "$ai_answer" != "n" ] && [ "$ai_answer" != "N" ]; then
+    LABELS="$LABELS --label mostly-ai"
+  else
+    LABELS="$LABELS --label mostly-human"
+  fi
 fi
 
 gh pr create -w --title "$message" --body "" $LABELS
