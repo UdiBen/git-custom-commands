@@ -1,0 +1,29 @@
+#!/bin/sh
+
+# Amend the last commit with all current changes and force push
+
+echo "Files to be committed (amend):"
+git status --short | while IFS= read -r line; do
+  status=$(echo "$line" | cut -c1-2 | tr -d ' ')
+  case "$status" in
+    D)  printf "\033[31m%s\033[0m\n" "$line" ;;
+    M)  printf "\033[33m%s\033[0m\n" "$line" ;;
+    A)  printf "\033[32m%s\033[0m\n" "$line" ;;
+    ??) printf "\033[32m%s\033[0m\n" "$line" ;;
+    *)  echo "$line" ;;
+  esac
+done
+
+printf "\nAmending last commit: "
+git log -1 --pretty=format:"%s"
+printf "\nProceed? [Y/n]: "
+read answer
+
+if [ "$answer" = "n" ] || [ "$answer" = "N" ]; then
+  echo "Aborted."
+  exit 1
+fi
+
+git add .
+git commit --amend --no-edit
+git push --force-with-lease
