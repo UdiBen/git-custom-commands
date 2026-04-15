@@ -19,6 +19,10 @@ The repository consists of executable shell scripts that act as git subcommands:
 - **git-delete-local**: Clean up merged local branches
 - **git-skip**: Manage skip-worktree files (ignore local changes)
 - **git-unstash**: Stash changes and apply to new branch
+- **git-parent-branch**: Detect the parent branch of the current branch
+- **git-rebase-after-squash**: Rebase onto target after parent was squash-merged (uses `--onto` to skip already-squashed commits)
+- **git-lines**: Show line count stats for changed files
+- **git-base-branch**: Detect the base branch (main/master) of the current repo
 
 ## Dependencies
 

@@ -29,3 +29,7 @@ Custom git subcommands for streamlining development workflows.
 | `git irebase` | Interactive rebase onto base branch, then force-push |
 | `git delete-local` | Delete local branches that have been merged |
 | `git skip <file>` | Toggle skip-worktree on a file |
+| `git parent-branch` | Detect the parent branch of the current branch |
+| `git rebase-after-squash [old-base] [target]` | Rebase onto target after parent was squash-merged |
+| `git lines` | Show line count stats for changed files |
+| `git cpa` | Amend last commit and force-push |

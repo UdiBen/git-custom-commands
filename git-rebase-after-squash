@@ -1,0 +1,76 @@
+#!/bin/sh
+
+# Description: Rebase current branch onto target after its parent was squash-merged
+
+# When a parent branch is squash-merged into the target (e.g. main), a normal
+# rebase replays the parent's commits and conflicts with the squashed version.
+# This script uses --onto to skip those commits, replaying only the current
+# branch's own commits onto the target.
+
+set -e
+
+usage() {
+    cat >&2 <<EOF
+Usage: git rebase-after-squash [<old-base>] [<target>]
+
+Rebases the current branch onto <target>, skipping commits from <old-base>
+that were already squash-merged into <target>.
+
+  <old-base>  The branch that was squash-merged (default: auto-detected parent)
+  <target>    The branch to rebase onto (default: origin/<base-branch>)
+
+Examples:
+  git rebase-after-squash                          # auto-detect both
+  git rebase-after-squash feature-branch            # explicit old base
+  git rebase-after-squash feature-branch origin/main  # explicit both
+EOF
+    exit 1
+}
+
+if [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    usage
+fi
+
+current=$(git rev-parse --abbrev-ref HEAD)
+if [ "$current" = "HEAD" ]; then
+    echo "error: detached HEAD" >&2
+    exit 1
+fi
+
+# Determine old base (the squash-merged parent branch)
+if [ -n "$1" ]; then
+    old_base="$1"
+else
+    old_base=$(git parent-branch)
+    if [ "$old_base" = "$(git base-branch)" ]; then
+        echo "error: parent branch is already the base branch — nothing to skip" >&2
+        echo "hint: use regular 'git rebase' or 'git grlp' instead" >&2
+        exit 1
+    fi
+fi
+
+# Determine target (where to rebase onto)
+if [ -n "$2" ]; then
+    target="$2"
+else
+    base_branch=$(git base-branch) || exit 1
+    target="origin/$base_branch"
+fi
+
+# Verify the old base ref exists
+if ! git rev-parse --verify "$old_base" >/dev/null 2>&1; then
+    echo "error: ref '$old_base' not found" >&2
+    echo "hint: if the branch was deleted, use the commit hash where it ended" >&2
+    exit 1
+fi
+
+git fetch
+
+echo "Rebasing $current onto $target, skipping commits from $old_base"
+echo "  equivalent to: git rebase --onto $target $old_base $current"
+echo ""
+
+git rebase --onto "$target" "$old_base" "$current"
+
+printf "\033[1;32mRebase complete.\033[0m\n"
+printf "Run \033[1mgit push --force-with-lease\033[0m when ready.\n"

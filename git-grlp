@@ -8,18 +8,16 @@ BASE_BRANCH=$(git base-branch) || exit 1
 echo "Using base branch: $BASE_BRANCH"
 
 # Ask user if the branch is private/local
-printf "\033[1;33mIs this a private/local branch (only you work on it)? [y/N]:\033[0m "
+printf "\033[1;33mIs this a private/local branch (only you work on it)? [Y/n]:\033[0m "
 read answer
 
 HEAD_BEFORE=$(git rev-parse HEAD)
 
-if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
+if [ "$answer" != "n" ] && [ "$answer" != "N" ]; then
     # Private branch: use rebase + force push.
-    # --fork-point finds where this branch diverged from the base, so commits
-    # already merged to the base (e.g., via squash-merge of a parent branch)
-    # are skipped instead of causing conflicts.
-    FORK_POINT=$(git merge-base --fork-point origin/$BASE_BRANCH HEAD 2>/dev/null || git merge-base origin/$BASE_BRANCH HEAD)
-    git rebase --onto origin/$BASE_BRANCH "$FORK_POINT"
+    # Plain rebase skips commits already in the target via patch-id matching,
+    # which handles squash-merged parent branches correctly.
+    git rebase origin/$BASE_BRANCH
     rebase_exit_code=$?
 
     if [ $rebase_exit_code -ne 0 ]; then

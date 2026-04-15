@@ -1,0 +1,49 @@
+#!/bin/sh
+
+# Description: Detect the parent branch of the current branch (the branch it was most likely forked from)
+
+# Override: respect BASE_BRANCH env var
+if [ -n "${BASE_BRANCH:-}" ]; then
+  echo "$BASE_BRANCH"
+  exit 0
+fi
+
+current=$(git rev-parse --abbrev-ref HEAD)
+if [ "$current" = "HEAD" ]; then
+    echo "error: detached HEAD, cannot detect parent branch" >&2
+    exit 1
+fi
+
+default_branch=$(git base-branch) || exit 1
+
+# If we're on the default branch, there's no parent
+if [ "$current" = "$default_branch" ]; then
+    echo "$default_branch"
+    exit 0
+fi
+
+best_branch=""
+best_count=""
+
+for branch in $(git for-each-ref --format='%(refname:short)' refs/remotes/origin/ | grep -v '^origin/HEAD$'); do
+    short=${branch#origin/}
+    # Skip the current branch
+    [ "$short" = "$current" ] && continue
+
+    mb=$(git merge-base "$branch" HEAD 2>/dev/null) || continue
+    count=$(git rev-list --count "$mb..HEAD")
+
+    if [ -z "$best_count" ] || [ "$count" -lt "$best_count" ]; then
+        best_count=$count
+        best_branch=$short
+    elif [ "$count" -eq "$best_count" ] && [ "$short" = "$default_branch" ]; then
+        # Prefer default branch on tie
+        best_branch=$short
+    fi
+done
+
+if [ -z "$best_branch" ]; then
+    echo "$default_branch"
+else
+    echo "$best_branch"
+fi

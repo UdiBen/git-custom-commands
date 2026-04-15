@@ -49,6 +49,14 @@ if [ -z "$BRANCH_NAME" ]; then
 fi
 
 BASE_BRANCH=$(git base-branch) || exit 1
+CURRENT_BRANCH=$(git branch --show-current)
+
+# Let user pick the source branch (skip if already on the base branch)
+if [ "$CURRENT_BRANCH" = "$BASE_BRANCH" ]; then
+  SOURCE_BRANCH="$BASE_BRANCH"
+else
+  SOURCE_BRANCH=$(printf '%s\n%s' "$CURRENT_BRANCH" "$BASE_BRANCH" | fzf --prompt="Branch from: " --height=~5 --no-info) || exit 1
+fi
 
 # Fetch the latest changes from the remote repository
 git fetch --all
@@ -62,13 +70,13 @@ else
   STASHED=false
 fi
 
-# Checkout the base branch and pull
-git checkout "$BASE_BRANCH"
-git pull origin "$BASE_BRANCH"
+# Checkout the source branch and pull
+git checkout "$SOURCE_BRANCH"
+git pull origin "$SOURCE_BRANCH"
 
 # Create new branch or checkout existing one
 if git show-ref --verify --quiet "refs/heads/$BRANCH_NAME"; then
-  echo "Branch '$BRANCH_NAME' already exists, checking out and updating from '$BASE_BRANCH'..."
+  echo "Branch '$BRANCH_NAME' already exists, checking out and updating from '$SOURCE_BRANCH'..."
   git checkout "$BRANCH_NAME"
 
   # Pop the stash if it was stashed
@@ -87,5 +95,5 @@ else
     git stash pop
   fi
 
-  echo "Branch '$BRANCH_NAME' created from '$BASE_BRANCH' and checked out."
+  echo "Branch '$BRANCH_NAME' created from '$SOURCE_BRANCH' and checked out."
 fi
