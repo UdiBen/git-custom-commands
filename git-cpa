@@ -9,7 +9,7 @@ git status --short | while IFS= read -r line; do
     D)  printf "\033[31m%s\033[0m\n" "$line" ;;
     M)  printf "\033[33m%s\033[0m\n" "$line" ;;
     A)  printf "\033[32m%s\033[0m\n" "$line" ;;
-    ??) printf "\033[32m%s\033[0m\n" "$line" ;;
+    ??) printf "\033[31m%s\033[0m\n" "$line" ;;
     *)  echo "$line" ;;
   esac
 done
