@@ -58,25 +58,25 @@ if [[ -n "$AUTHOR_FLAG" ]]; then
 fi
 echo ""
 
-# Get list of authors (filtered if needed)
-if [[ -n "$AUTHOR_FLAG" ]]; then
-  authors=$(git log --format='%aN <%aE>' $SINCE_FLAG $AUTHOR_FLAG | sort -u)
-else
-  authors=$(git log --format='%aN <%aE>' $SINCE_FLAG | sort -u)
-fi
+# Get list of unique contributor emails (filtered if needed)
+emails=$(git log --format='%aE' $SINCE_FLAG $AUTHOR_FLAG | awk 'NF' | sort -u)
 
-# Calculate stats for each author and store in temp file
+# Calculate stats for each email and store in temp file. All commits sharing
+# an email are aggregated, even if the author name varies between commits.
 temp_file=$(mktemp)
-echo "$authors" | while read name; do
-  if [[ -n "$name" ]]; then
-    stats=$(git log --author="$name" $SINCE_FLAG --pretty=tformat: --numstat | awk '{ 
-      add += $1; 
-      subs += $2; 
-      loc += $1 - $2 
-    } END { 
-      printf "%d\t%d\t%d", add+0, subs+0, loc+0 
+echo "$emails" | while read email; do
+  if [[ -n "$email" ]]; then
+    # Pick the most recent name associated with this email for display.
+    display_name=$(git log --author="<$email>" $SINCE_FLAG --format='%aN' | head -1)
+    label="$display_name <$email>"
+    stats=$(git log --author="<$email>" $SINCE_FLAG --pretty=tformat: --numstat | awk '{
+      add += $1;
+      subs += $2;
+      loc += $1 - $2
+    } END {
+      printf "%d\t%d\t%d", add+0, subs+0, loc+0
     }' -)
-    echo -e "$name\t$stats" >> "$temp_file"
+    echo -e "$label\t$stats" >> "$temp_file"
   fi
 done
 
